@@ -1,3 +1,5 @@
+use core::fmt::{Debug, Formatter};
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct RType(pub u32);
 impl RType {
@@ -149,6 +151,51 @@ impl R4Type {
     }
     pub fn rd(&self) -> u32 {
         (self.0 >> 7) & 0x1f
+    }
+}
+
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+pub struct CAddi16SpType(pub u16);
+impl CAddi16SpType {
+    pub fn nzimm(&self) -> i16 {
+        (if self.0 & 0b1_0000_0000_0000 == 0b1_0000_0000_0000 {
+            0b1111_1110_0000_0000
+        } else {
+            0
+        } |
+            (self.0 & 0b0100_0000) >> 2 |
+            (self.0 & 0b0010_0000) << 1 |
+            (self.0 & 0b0001_1000) << 4 |
+            (self.0 & 0b0000_0100) << 5) as i16
+    }
+}
+impl Debug for CAddi16SpType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("CAddi16SpType")
+            .field("nzimm", &self.nzimm())
+            .finish()
+    }
+}
+
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+pub struct CRType(pub u16);
+impl CRType {
+    pub fn rd(&self) -> u16 {
+        self.0 >> 7 & 0x1f
+    }
+    pub fn rs1(&self) -> u16 {
+        self.rd()
+    }
+    pub fn rs2(&self) -> u16 {
+        self.0 >> 2 & 0x1f
+    }
+}
+impl Debug for CRType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("CR")
+            .field("rd/rs1", &self.rd())
+            .field("rs2", &self.rs2())
+            .finish()
     }
 }
 
@@ -400,5 +447,11 @@ mod tests {
         assert_eq!(ShiftType(0x41f0df1b).rd(), 30); // sraiw x30,x1,0x1f
         assert_eq!(ShiftType(0x4000df1b).rd(), 30); // sraiw x30,x1,0x0
         assert_eq!(ShiftType(0x4070d09b).rd(), 1); // sraiw x1,x1,0x7
+    }
+
+    #[test]
+    fn caddi16sptype() {
+        assert_eq!(CAddi16SpType(0x7119).nzimm(), -128);
+        assert_eq!(CAddi16SpType(0x711d).nzimm(), -96);
     }
 }

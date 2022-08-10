@@ -133,6 +133,14 @@ pub enum Instruction {
     Fcvtswu(RType),
     Fmvwx(RType),
 
+    //RVC
+    CAddi16Sp(CAddi16SpType),
+    CJr(CRType),
+    CJalr(CRType),
+    CMv(CRType),
+    CAdd(CRType),
+    CEBreak(CRType),
+
     // Illegal
     Illegal,
 

@@ -46,12 +46,40 @@ pub fn decode_q00(i: u32) -> DecodingResult {
     }
 }
 
-pub fn decode_q01(_i: u32) -> DecodingResult {
-    Err(DecodingError::Unimplemented)
+pub fn decode_q01(i: u32) -> DecodingResult {
+    match i >> 13 {
+        0b011 => match (i >> 7) & 0b11111 {
+            0b00 => Ok(Instruction::Illegal),
+            0b10 => Ok(Instruction::CAddi16Sp(CAddi16SpType(i as u16))),
+            rd => Err(DecodingError::Unimplemented),
+        },
+        _ => Err(DecodingError::Unimplemented),
+    }
 }
 
-pub fn decode_q10(_i: u32) -> DecodingResult {
-    Err(DecodingError::Unimplemented)
+pub fn decode_q10(i: u32) -> DecodingResult {
+    match i >> 13 {
+        0b100 => match i >> 12 & 0b1 {
+            0b0 => match i >> 7 & 0x1f {
+                0 => Ok(Instruction::Illegal),
+                _ => match i >> 2 &0x1f {
+                    0 => Ok(Instruction::CJr(CRType(i as u16))),
+                    _ => Ok(Instruction::CMv(CRType(i as u16))),
+                }
+            }
+            _ => match i >> 7 & 0x1f {
+                0 => match i >> 2 & 0x1f {
+                    0 => Ok(Instruction::CEBreak(CRType(i as u16))),
+                    _ => Ok(Instruction::Illegal),
+                }
+                _ => match i >> 2 & 0x1f {
+                    0 => Ok(Instruction::CJalr(CRType(i as u16))),
+                    _ => Ok(Instruction::CAdd(CRType(i as u16))),
+                }
+            },
+        }
+        _ => Err(DecodingError::Unimplemented),
+    }
 }
 
 #[cfg(test)]
